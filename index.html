@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f3ee">
+<title>Spanish Flashcard Library</title>
+<style>
+:root{color-scheme:light;--ink:#25251f;--muted:#6e7068;--paper:#fbfaf7;--panel:#fff;--line:#e6e3da;--accent:#356b5a;--accent2:#e8f1ec;--danger:#a33c35}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:25px 18px 18px;background:#eef2ed;border-bottom:1px solid var(--line)}.wrap{max-width:900px;margin:auto}
+h1{font-size:clamp(1.55rem,4vw,2.1rem);margin:0 0 5px}h2{font-size:1.12rem;margin:0 0 12px}p{margin:5px 0;color:var(--muted)}button,input,textarea,select{font:inherit}
+main{padding:18px;display:grid;gap:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 2px 8px #27251a08}
+.tabs,.actions,.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tabs{margin-top:16px}.tab,.btn{border:1px solid var(--line);background:white;color:var(--ink);padding:9px 13px;border-radius:10px;cursor:pointer}.tab.active,.btn.primary{background:var(--accent);border-color:var(--accent);color:white}.btn.danger{color:var(--danger)}.btn:disabled{opacity:.45;cursor:not-allowed}
+input,textarea,select{width:100%;border:1px solid #d9d7cf;border-radius:10px;padding:10px;background:#fff;color:var(--ink)}textarea{min-height:112px;resize:vertical}label{display:block;font-weight:600;font-size:.9rem;margin:12px 0 6px}.hint{font-size:.86rem;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.group-list{display:grid;gap:8px}.group-item{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:12px;padding:11px}.group-item button:first-child{text-align:left;flex:1;background:none;border:0;padding:2px;cursor:pointer;color:var(--ink)}.count{color:var(--muted);font-size:.82rem}
+.flashcard{min-height:220px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:28px;border:1px solid #d8e3dc;border-radius:16px;background:linear-gradient(145deg,#f4f8f4,#fff);cursor:pointer;user-select:none}
+.flashcard .side{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:15px}.flashcard .word{font-size:clamp(1.7rem,6vw,2.5rem);font-weight:700;overflow-wrap:anywhere}.flashcard .tap{font-size:.82rem;color:var(--muted);margin-top:20px}
+.stats{font-size:.9rem;color:var(--muted)}.hidden{display:none!important}.status{font-size:.86rem;color:var(--accent);min-height:1.3em}.term{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}.term:last-child{border:0}.term small{display:block;color:var(--muted)}footer{padding:0 18px 25px;text-align:center;color:var(--muted);font-size:.82rem}
+@media(min-width:720px){main{grid-template-columns:1fr 1fr}.wide{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>Spanish Flashcard Library</h1>
+  <p>Keep your vocabulary organised, saved and ready to practise.</p>
+  <nav class="tabs" aria-label="Main sections">
+    <button class="tab active" data-view="study">Study</button>
+    <button class="tab" data-view="library">Library & groups</button>
+    <button class="tab" data-view="add">Add words</button>
+    <button class="tab" data-view="backup">Backup</button>
+  </nav>
+</div></header>
+<main class="wrap">
+<section id="study" class="panel wide">
+  <div class="row" style="justify-content:space-between"><div><h2>Study cards</h2><div id="studyStats" class="stats"></div></div>
+    <select id="studyGroup" style="max-width:220px" aria-label="Choose group"><option value="__ALL__">All cards</option></select>
+  </div>
+  <div class="grid" style="margin:12px 0">
+    <div><label for="direction">Starting side</label><select id="direction"><option value="en">English → Spanish</option><option value="es">Spanish → English</option></select></div>
+    <div><label for="studyFilter">Card order</label><select id="studyFilter"><option value="order">Saved order</option><option value="shuffle">Shuffle</option></select></div>
+  </div>
+  <div id="card" class="flashcard" role="button" tabindex="0" aria-label="Flashcard. Tap to reveal answer">
+    <div class="side" id="cardSide">English</div><div class="word" id="cardWord">Add some words to begin</div><div class="tap">Tap to reveal the other side</div>
+  </div>
+  <div class="row" style="justify-content:space-between;margin-top:12px">
+    <button class="btn" id="prev">← Previous</button><span class="stats" id="position">0 / 0</span><button class="btn" id="next">Next →</button>
+  </div>
+  <div class="row" style="justify-content:center;margin-top:10px"><button class="btn" id="shuffle">Shuffle cards</button></div>
+</section>
+
+<section id="library" class="panel hidden">
+  <h2>Groups</h2><p class="hint">Choose a group to see its cards. “All cards” includes every group.</p>
+  <div id="groupList" class="group-list" style="margin-top:12px"></div>
+  <div class="row" style="margin-top:12px"><input id="newGroupName" placeholder="New group name" aria-label="New group name"><button class="btn primary" id="createGroup">Create group</button></div>
+  <div class="status" id="groupStatus"></div>
+</section>
+<section id="groupDetail" class="panel hidden">
+  <div class="row" style="justify-content:space-between"><h2 id="detailTitle">Group</h2><button class="btn" id="backGroups">← Groups</button></div>
+  <div class="stats" id="detailCount"></div><div id="detailTerms" style="margin-top:10px"></div>
+  <div class="row" style="margin-top:12px"><button class="btn" id="renameGroup">Rename group</button><button class="btn danger" id="deleteGroup">Delete group</button></div>
+  <p class="hint">Deleting a group moves its cards into “Unsorted”; it does not delete the cards.</p>
+</section>
+
+<section id="add" class="panel hidden wide">
+  <h2>Add vocabulary</h2>
+  <p>Paste one card per line. Separate English and Spanish with a vertical bar <b>|</b> or a tab.</p>
+  <label for="targetGroup">Save into group</label><select id="targetGroup"></select>
+  <label for="bulk">Words to add</label>
+  <textarea id="bulk" placeholder="I am hungry | Tengo hambre&#10;I am thirsty | Tengo sed&#10;I have a dog | Tengo un perro"></textarea>
+  <div class="row" style="margin-top:10px"><button class="btn primary" id="addCards">Save cards</button><span class="hint">Existing cards are kept; new cards are added.</span></div>
+  <div class="status" id="addStatus"></div>
+  <div class="panel" style="margin-top:16px;background:#faf9f5"><h2>Quick add one card</h2>
+    <label for="oneEn">English</label><input id="oneEn" placeholder="I speak Spanish">
+    <label for="oneEs">Spanish</label><input id="oneEs" placeholder="Hablo español">
+    <button class="btn" id="addOne" style="margin-top:10px">Add one card</button>
+  </div>
+</section>
+
+<section id="backup" class="panel hidden wide">
+  <h2>Backup your library</h2>
+  <p>Your cards are saved in this browser on this device. GitHub Pages hosts the app, but it does not automatically sync your words between devices or browsers.</p>
+  <div class="row" style="margin:14px 0"><button class="btn primary" id="export">Download backup</button><label class="btn" for="importFile" style="margin:0;cursor:pointer">Restore backup</label><input class="hidden" id="importFile" type="file" accept="application/json,.json"></div>
+  <div class="status" id="backupStatus"></div>
+  <p class="hint">Keep a backup occasionally, especially before clearing Safari website data or changing devices.</p>
+  <button class="btn danger" id="reset">Reset this browser's library</button>
+</section>
+</main>
+<footer>Saved on this device using browser storage. Export a backup to keep a separate copy.</footer>
+<script>
+const KEY='spanishFlashcardLibrary_v2';
+const starterGroups=['Essential verbs','Verb forms','Everyday phrases','Food and drink'];
+const starter=[
+['Essential verbs','to be (identity / description)','SER'],['Essential verbs','to be (feeling / location)','ESTAR'],['Essential verbs','to have','TENER'],
+['Essential verbs','to speak','HABLAR'],['Essential verbs','to eat','COMER'],['Essential verbs','to drink','BEBER'],['Essential verbs','to live','VIVIR'],
+['Verb forms','I am (SER)','soy'],['Verb forms','you are (SER)','eres'],['Verb forms','he / she is (SER)','es'],['Verb forms','we are (SER)','somos'],['Verb forms','they are (SER)','son'],
+['Verb forms','I am (ESTAR)','estoy'],['Verb forms','you are (ESTAR)','estás'],['Verb forms','he / she is (ESTAR)','está'],['Verb forms','we are (ESTAR)','estamos'],['Verb forms','they are (ESTAR)','están'],
+['Verb forms','I have','tengo'],['Verb forms','you have','tienes'],['Verb forms','he / she has','tiene'],['Verb forms','we have','tenemos'],['Verb forms','they have','tienen'],
+['Verb forms','I speak','hablo'],['Verb forms','you speak','hablas'],['Verb forms','he / she speaks','habla'],['Verb forms','we speak','hablamos'],['Verb forms','they speak','hablan'],
+['Everyday phrases','Hello','Hola'],['Everyday phrases','Good morning','Buenos días'],['Everyday phrases','How are you?','¿Cómo estás?'],['Everyday phrases','I am fine','Estoy bien'],['Everyday phrases','My name is…','Me llamo…'],['Everyday phrases','I do not understand','No entiendo'],['Everyday phrases','Please','Por favor'],['Everyday phrases','Thank you','Gracias'],['Everyday phrases','Where do you live?','¿Dónde vives?'],['Everyday phrases','Do you speak English?','¿Hablas inglés?'],
+['Food and drink','I am hungry','Tengo hambre'],['Food and drink','I am thirsty','Tengo sed'],['Food and drink','I eat bread','Como pan'],['Food and drink','She drinks water','Ella bebe agua']
+];
+function fresh(){return {groups:[...starterGroups,'Unsorted'],cards:starter.map((x,i)=>({id:'s'+i,group:x[0],en:x[1],es:x[2]}))}}
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&Array.isArray(x.groups)&&Array.isArray(x.cards))return x}catch(e){}return fresh()}
+let db=load(),currentGroup=null,deck=[],idx=0,flipped=false;
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){alert('Could not save. Your browser storage may be full or disabled. Export a backup if possible.');return false}}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function count(g){return db.cards.filter(c=>c.group===g).length}
+function populate(){let opts='<option value="__ALL__">All cards</option>'+db.groups.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');document.getElementById('studyGroup').innerHTML=opts;document.getElementById('targetGroup').innerHTML=db.groups.map(g=>`<option>${esc(g)}</option>`).join('')}
+function view(name){document.querySelectorAll('main>section').forEach(s=>s.classList.add('hidden'));document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===name));document.getElementById(name).classList.remove('hidden');if(name==='library')renderGroups()}
+function buildDeck(){let g=document.getElementById('studyGroup').value;deck=db.cards.filter(c=>g==='__ALL__'||c.group===g);if(document.getElementById('studyFilter').value==='shuffle')deck.sort(()=>Math.random()-.5);idx=0;flipped=false;renderCard()}
+function renderCard(){let c=deck[idx];let dir=document.getElementById('direction').value;document.getElementById('cardSide').textContent=c?(flipped?(dir==='en'?'Spanish':'English'):(dir==='en'?'English':'Spanish')):(dir==='en'?'English':'Spanish');document.getElementById('cardWord').textContent=c?(flipped?(dir==='en'?c.es:c.en):(dir==='en'?c.en:c.es)):'No cards in this selection yet';document.getElementById('position').textContent=deck.length?`${idx+1} / ${deck.length}`:'0 / 0';document.getElementById('studyStats').textContent=`${deck.length} card${deck.length===1?'':'s'} in this selection`;document.getElementById('prev').disabled=!deck.length;document.getElementById('next').disabled=!deck.length}
+function step(n){if(!deck.length)return;idx=(idx+n+deck.length)%deck.length;flipped=false;renderCard()}
+document.getElementById('card').addEventListener('click',()=>{if(deck.length){flipped=!flipped;renderCard()}});
+document.getElementById('card').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();if(deck.length){flipped=!flipped;renderCard()}}});
+document.getElementById('prev').onclick=()=>step(-1);document.getElementById('next').onclick=()=>step(1);
+document.getElementById('shuffle').onclick=()=>{deck.sort(()=>Math.random()-.5);idx=0;flipped=false;renderCard()};
+document.getElementById('studyGroup').onchange=buildDeck;document.getElementById('studyFilter').onchange=buildDeck;document.getElementById('direction').onchange=()=>{flipped=false;renderCard()};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>view(b.dataset.view));
+function renderGroups(){document.getElementById('groupList').innerHTML='<div class="group-item"><button data-all><b>All cards</b><small class="count">Every group · '+db.cards.length+' cards</small></button></div>'+db.groups.map(g=>`<div class="group-item"><button data-group="${esc(g)}"><b>${esc(g)}</b><small class="count">${count(g)} cards</small></button><span class="count">›</span></div>`).join('');document.querySelector('[data-all]').onclick=()=>{view('study');document.getElementById('studyGroup').value='__ALL__';buildDeck()};document.querySelectorAll('[data-group]').forEach(b=>b.onclick=()=>showGroup(b.dataset.group))}
+function showGroup(g){currentGroup=g;document.getElementById('detailTitle').textContent=g;document.getElementById('detailCount').textContent=count(g)+' cards';document.getElementById('detailTerms').innerHTML=db.cards.filter(c=>c.group===g).map(c=>`<div class="term"><div><b>${esc(c.en)}</b><small>${esc(c.es)}</small></div><button class="btn danger" data-del="${esc(c.id)}" aria-label="Delete card">Delete</button></div>`).join('')||'<p>No cards in this group yet.</p>';document.getElementById('groupDetail').classList.remove('hidden');document.getElementById('library').classList.add('hidden');document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('Delete this flashcard?')){db.cards=db.cards.filter(c=>c.id!==b.dataset.del);save();showGroup(g)}})}
+document.getElementById('backGroups').onclick=()=>{document.getElementById('groupDetail').classList.add('hidden');document.getElementById('library').classList.remove('hidden');renderGroups()};
+document.getElementById('createGroup').onclick=()=>{let n=document.getElementById('newGroupName').value.trim();if(!n)return;if(db.groups.some(g=>g.toLowerCase()===n.toLowerCase())){document.getElementById('groupStatus').textContent='That group already exists.';return}db.groups.push(n);save();document.getElementById('newGroupName').value='';document.getElementById('groupStatus').textContent='Group created.';populate();renderGroups()};
+document.getElementById('renameGroup').onclick=()=>{let n=prompt('New name for this group:',currentGroup);if(!n||!n.trim())return;n=n.trim();if(db.groups.includes(n)&&n!==currentGroup){alert('A group with that name already exists.');return}db.groups=db.groups.map(g=>g===currentGroup?n:g);db.cards.forEach(c=>{if(c.group===currentGroup)c.group=n});currentGroup=n;save();populate();showGroup(n)};
+document.getElementById('deleteGroup').onclick=()=>{if(!confirm(`Delete the group "${currentGroup}"? Its cards will be moved to Unsorted.`))return;if(!db.groups.includes('Unsorted'))db.groups.push('Unsorted');db.cards.forEach(c=>{if(c.group===currentGroup)c.group='Unsorted'});db.groups=db.groups.filter(g=>g!==currentGroup);save();populate();document.getElementById('groupDetail').classList.add('hidden');document.getElementById('library').classList.remove('hidden');renderGroups()};
+function addCard(en,es,g){db.cards.push({id:'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),group:g,en:en.trim(),es:es.trim()})}
+document.getElementById('addCards').onclick=()=>{let g=document.getElementById('targetGroup').value,lines=document.getElementById('bulk').value.split(/\r?\n/),added=0,bad=0;for(let line of lines){if(!line.trim())continue;let p=line.includes('|')?line.split('|'):line.split('\t');if(p.length<2||!p[0].trim()||!p.slice(1).join('|').trim()){bad++;continue}addCard(p[0],p.slice(1).join('|'),g);added++}if(added)save();document.getElementById('addStatus').textContent=`Added ${added} card(s).${bad?' Skipped '+bad+' line(s) — check the separator.':''}`;document.getElementById('bulk').value='';populate();buildDeck()};
+document.getElementById('addOne').onclick=()=>{let en=document.getElementById('oneEn').value,es=document.getElementById('oneEs').value,g=document.getElementById('targetGroup').value;if(!en.trim()||!es.trim()){alert('Enter both English and Spanish.');return}addCard(en,es,g);save();document.getElementById('oneEn').value='';document.getElementById('oneEs').value='';document.getElementById('addStatus').textContent='Card added to '+g+'.';populate();buildDeck()};
+document.getElementById('export').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download='spanish-flashcards-backup.json';a.click();URL.revokeObjectURL(url);document.getElementById('backupStatus').textContent='Backup downloaded.'};
+document.getElementById('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.groups)||!Array.isArray(x.cards)||!x.cards.every(c=>c.en&&c.es&&c.group))throw Error();if(confirm('Restore this backup? It will replace the current library.')){db=x;save();populate();buildDeck();document.getElementById('backupStatus').textContent='Backup restored.'}}catch(err){document.getElementById('backupStatus').textContent='That file does not look like a valid flashcard backup.'}e.target.value=''};
+document.getElementById('reset').onclick=()=>{if(confirm('Reset the library in this browser and restore the starter cards? Export a backup first if you want to keep your words.')){db=fresh();save();populate();buildDeck();document.getElementById('backupStatus').textContent='Starter library restored.'}};
+populate();buildDeck();
+</script>
+</body></html>
